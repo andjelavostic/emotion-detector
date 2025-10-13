@@ -11,7 +11,7 @@ y_train = np.load("../data/processed_data/y_train.npy")
 X_val   = np.load("../data/processed_data/X_val.npy")
 y_val   = np.load("../data/processed_data/y_val.npy")
 
-# Encode labels to integers
+# Encode labels
 le = LabelEncoder()
 y_train_encoded = le.fit_transform(y_train)
 y_val_encoded   = le.transform(y_val)
@@ -21,7 +21,7 @@ scaler = StandardScaler()
 X_train_scaled = scaler.fit_transform(X_train)
 X_val_scaled   = scaler.transform(X_val)
 
-# Grid search
+# Grid search with more hyperparameters
 knn = KNeighborsClassifier()
 param_grid = {
     'n_neighbors': [3, 5, 7, 9, 11],
@@ -40,14 +40,14 @@ print("Best KNN parameters found:", grid.best_params_)
 
 # Evaluate on validation set
 y_val_pred_encoded = best_knn.predict(X_val_scaled)
+y_val_pred_str = le.inverse_transform(y_val_pred_encoded)  # dekodiraj predikcije
+y_val_str = y_val  # stvarne vrednosti već u string formatu
 
-y_val_str = le.inverse_transform(y_val_encoded) 
-y_val_pred_str = le.inverse_transform(y_val_pred_encoded)
 print("Validation Accuracy:", accuracy_score(y_val_str, y_val_pred_str))
 print(classification_report(y_val_str, y_val_pred_str, target_names=le.classes_))
 
-
-# Save model
-joblib.dump(best_knn, "../data/processed_data/knn_model.pkl")
-print("KNN model saved successfully.")
-
+# Save model, scaler, and label encoder
+joblib.dump(best_knn, "../models/knn/knn_model.pkl")
+joblib.dump(scaler, "../models/knn/scaler.pkl")
+joblib.dump(le, "../models/knn/label_encoder.pkl")
+print("KNN model, scaler, and label encoder saved successfully.")
