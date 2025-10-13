@@ -4,39 +4,38 @@ import librosa
 from sklearn.model_selection import train_test_split
 
 # CONFIG
-DATASET_PATH = "../data/raw"   # path
-SAMPLE_RATE = 22050                # standard for RAVDESS
-N_MFCC = 13                        # MFFC coeficcients
-TEST_SIZE = 0.15                   # 15% for test
-VAL_SIZE = 0.15                    # 15% from the rest for validation
+DATASET_PATH = "../data/raw"  # path to folder with RAVDESS
+SAMPLE_RATE = 22050           # standard sample rate
+N_MFCC = 13                   # number of MFCC coefficients
+TEST_SIZE = 0.15
+VAL_SIZE = 0.15
 
-# FUNCTIONS
+# AUGMENTATION FUNCTIONS
+def add_noise(y, noise_factor=0.005):
+    noise = np.random.randn(len(y))
+    return y + noise_factor * noise
 
-def extract_features(file_path):
-    """Extracting MFCC, pitch, energy i ZCR."""
-    y, sr = librosa.load(file_path, sr=SAMPLE_RATE)
-    
-    # MFCC (mean value per coef)
+def my_time_stretch(y, rate=1.1):
+    return librosa.effects.time_stretch(y, rate=rate)
+
+def my_pitch_shift(y, sr, n_steps=2):
+    return librosa.effects.pitch_shift(y, sr=sr, n_steps=n_steps)
+
+def change_volume(y, factor=1.2):
+    return y * factor
+
+# FEATURE EXTRACTION
+def extract_features(y, sr):
     mfccs = np.mean(librosa.feature.mfcc(y=y, sr=sr, n_mfcc=N_MFCC).T, axis=0)
-
-    # Pitch (fundamental frequency)
     pitches, magnitudes = librosa.piptrack(y=y, sr=sr)
     pitch_mean = np.mean(pitches[magnitudes > np.median(magnitudes)]) if np.any(magnitudes) else 0
-
-    # Energy (Root Mean Square)
     energy = np.mean(librosa.feature.rms(y=y))
-
-    # ZCR (Zero Crossing Rate)
     zcr = np.mean(librosa.feature.zero_crossing_rate(y))
+    return np.hstack([mfccs, pitch_mean, energy, zcr])
 
-    # All in one vector
-    features = np.hstack([mfccs, pitch_mean, energy, zcr])
-    return features
-
-
+# PARSE EMOTION
 def parse_emotion_from_filename(filename):
-    """Extracting emotion from file name"""
-    # Name of file example : 03-01-05-01-02-01-12.wav
+    # Name example: 03-01-05-01-02-01-12.wav
     parts = filename.split('-')
     modality = int(parts[0])
     vocal_channel = int(parts[1])
@@ -46,7 +45,7 @@ def parse_emotion_from_filename(filename):
     if vocal_channel != 1:
         return None
 
-    # Emotion classes - 8
+
     emotions = {
         1: "neutral",
         2: "calm",
@@ -59,12 +58,11 @@ def parse_emotion_from_filename(filename):
     }
     return emotions.get(emotion, None)
 
-
-# LOADING AND PREPROCCESSING
+# LOADING AND AUGMENTATION
 X = []
 y = []
 
-print("Loading and extracting...")
+print("Loading and extracting features with augmentation...")
 
 for actor_folder in os.listdir(DATASET_PATH):
     actor_path = os.path.join(DATASET_PATH, actor_folder)
@@ -77,29 +75,40 @@ for actor_folder in os.listdir(DATASET_PATH):
 
         emotion_label = parse_emotion_from_filename(file)
         if emotion_label is None:
-            continue  # skip if it does not contain emotion label
+            continue
 
         file_path = os.path.join(actor_path, file)
-        features = extract_features(file_path)
-        X.append(features)
+        y_audio, sr = librosa.load(file_path, sr=SAMPLE_RATE)
+
+        # Original features
+        X.append(extract_features(y_audio, sr))
+        y.append(emotion_label)
+
+        # Augmentations
+        X.append(extract_features(add_noise(y_audio), sr))
+        y.append(emotion_label)
+
+        X.append(extract_features(my_time_stretch(y_audio, 1.1), sr))
+        y.append(emotion_label)
+
+        X.append(extract_features(my_pitch_shift(y_audio, sr, 2), sr))
+        y.append(emotion_label)
+
+        X.append(extract_features(change_volume(y_audio, 1.2), sr))
         y.append(emotion_label)
 
 X = np.array(X)
 y = np.array(y)
+print(f"Total examples after augmentation: {len(X)}")
 
-print(f"Loaded: {len(X)} examples.")
-
-
-# CREATING TRAIN, TEST AND VAL by spliting
+# TRAIN/VAL/TEST SPLIT
 X_train, X_temp, y_train, y_temp = train_test_split(X, y, test_size=TEST_SIZE + VAL_SIZE, stratify=y, random_state=42)
 X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=TEST_SIZE / (TEST_SIZE + VAL_SIZE), stratify=y_temp, random_state=42)
 
 print(f"Train: {len(X_train)}, Val: {len(X_val)}, Test: {len(X_test)}")
 
-# SAVE .npy FILES
+# SAVE .NPY FILES
 os.makedirs("../data/processed_data", exist_ok=True)
-
-# Save files
 np.save("../data/processed_data/X_train.npy", X_train)
 np.save("../data/processed_data/y_train.npy", y_train)
 np.save("../data/processed_data/X_val.npy", X_val)
@@ -107,5 +116,4 @@ np.save("../data/processed_data/y_val.npy", y_val)
 np.save("../data/processed_data/X_test.npy", X_test)
 np.save("../data/processed_data/y_test.npy", y_test)
 
-
-print("Saved .npy files in folder 'data/processed_data/'")
+print("Saved all .npy files in 'data/processed_data/'")
