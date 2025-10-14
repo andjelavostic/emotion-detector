@@ -1,7 +1,8 @@
 import numpy as np
 import os
 import joblib
-from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.feature_selection import SelectKBest, f_classif
+from sklearn.preprocessing import PowerTransformer, StandardScaler, LabelEncoder
 from sklearn.naive_bayes import GaussianNB
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 import seaborn as sns
@@ -34,19 +35,27 @@ X_train_scaled = scaler.fit_transform(X_train)
 X_val_scaled   = scaler.transform(X_val)
 X_test_scaled  = scaler.transform(X_test)
 
+pt = PowerTransformer(method='yeo-johnson')  # radi i sa negativnim vrednostima
+X_train_scaled = pt.fit_transform(X_train_scaled)
+X_val_scaled   = pt.transform(X_val_scaled)
+X_test_scaled  = pt.transform(X_test_scaled)
+
+selector = SelectKBest(f_classif, k=20)  # uzmi 20 najboljih feature-a
+X_train_scaled = selector.fit_transform(X_train_scaled, y_train_enc)
+X_val_scaled   = selector.transform(X_val_scaled)
+X_test_scaled  = selector.transform(X_test_scaled)
+
 # =======================
 # OPTIONAL: SMOTE (ako su klase neuravnotežene)
 # =======================
-smote = SMOTE(random_state=42)
-X_train_bal, y_train_bal = smote.fit_resample(X_train_scaled, y_train_enc)
 
-print(f"Train set before SMOTE: {len(X_train)}, after SMOTE: {len(X_train_bal)}")
+#print(f"Train set before SMOTE: {len(X_train)}, after SMOTE: {len(X_train_bal)}")
 
 # =======================
 # TRAIN GAUSSIANNB
 # =======================
 model = GaussianNB()
-model.fit(X_train_bal, y_train_bal)
+model.fit(X_train_scaled, y_train_enc)
 
 # =======================
 # VALIDATION
