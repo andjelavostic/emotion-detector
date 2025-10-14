@@ -1,96 +1,61 @@
 import numpy as np
-import os
-import joblib
-from sklearn.feature_selection import SelectKBest, f_classif
 from sklearn.preprocessing import PowerTransformer, StandardScaler, LabelEncoder
 from sklearn.naive_bayes import GaussianNB
-from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
-import seaborn as sns
-import matplotlib.pyplot as plt
-from imblearn.over_sampling import SMOTE
+from sklearn.metrics import accuracy_score, classification_report
+import joblib
+import os
 
-# =======================
-# LOAD DATA (već podeljeno)
-# =======================
+# ============================
+# LOAD DATA
+# ============================
 X_train = np.load("../data/processed_data/X_train.npy")
 y_train = np.load("../data/processed_data/y_train.npy")
 X_val   = np.load("../data/processed_data/X_val.npy")
 y_val   = np.load("../data/processed_data/y_val.npy")
-X_test  = np.load("../data/processed_data/X_test.npy")
-y_test  = np.load("../data/processed_data/y_test.npy")
 
-# =======================
+# ============================
 # LABEL ENCODING
-# =======================
+# ============================
 le = LabelEncoder()
-y_train_enc = le.fit_transform(y_train)
-y_val_enc   = le.transform(y_val)
-y_test_enc  = le.transform(y_test)
+y_train_encoded = le.fit_transform(y_train)
+y_val_encoded   = le.transform(y_val)
 
-# =======================
-# SCALE FEATURES
-# =======================
+# ============================
+# PREPROCESSING FOR NAIVE BAYES
+# ============================
+# 1️⃣ Standardize features
 scaler = StandardScaler()
 X_train_scaled = scaler.fit_transform(X_train)
 X_val_scaled   = scaler.transform(X_val)
-X_test_scaled  = scaler.transform(X_test)
 
-pt = PowerTransformer(method='yeo-johnson')  # radi i sa negativnim vrednostima
-X_train_scaled = pt.fit_transform(X_train_scaled)
-X_val_scaled   = pt.transform(X_val_scaled)
-X_test_scaled  = pt.transform(X_test_scaled)
+# 2️⃣ Power transform to approximate normal distribution
+pt = PowerTransformer(method='yeo-johnson')
+X_train_trans = pt.fit_transform(X_train_scaled)
+X_val_trans   = pt.transform(X_val_scaled)
 
-selector = SelectKBest(f_classif, k=20)  # uzmi 20 najboljih feature-a
-X_train_scaled = selector.fit_transform(X_train_scaled, y_train_enc)
-X_val_scaled   = selector.transform(X_val_scaled)
-X_test_scaled  = selector.transform(X_test_scaled)
+# ============================
+# TRAIN GAUSSIAN NAIVE BAYES MODEL
+# ============================
+nb = GaussianNB()
+nb.fit(X_train_trans, y_train_encoded)
 
-# =======================
-# OPTIONAL: SMOTE (ako su klase neuravnotežene)
-# =======================
-
-#print(f"Train set before SMOTE: {len(X_train)}, after SMOTE: {len(X_train_bal)}")
-
-# =======================
-# TRAIN GAUSSIANNB
-# =======================
-model = GaussianNB()
-model.fit(X_train_scaled, y_train_enc)
-
-# =======================
+# ============================
 # VALIDATION
-# =======================
-y_val_pred = model.predict(X_val_scaled)
-val_acc = accuracy_score(y_val_enc, y_val_pred)
-print(f"Validation Accuracy: {val_acc:.4f}")
-print(classification_report(y_val_enc, y_val_pred, target_names=le.classes_, zero_division=0))
+# ============================
+y_val_pred_encoded = nb.predict(X_val_trans)
+y_val_pred_str = le.inverse_transform(y_val_pred_encoded)
+y_val_str = y_val
 
-# =======================
-# TEST
-# =======================
-y_test_pred = model.predict(X_test_scaled)
-test_acc = accuracy_score(y_test_enc, y_test_pred)
-print(f"Test Accuracy: {test_acc:.4f}")
-print(classification_report(y_test_enc, y_test_pred, target_names=le.classes_, zero_division=0))
+print("Validation Accuracy:", accuracy_score(y_val_str, y_val_pred_str))
+print(classification_report(y_val_str, y_val_pred_str, target_names=le.classes_))
 
-# =======================
-# CONFUSION MATRIX
-# =======================
-cm = confusion_matrix(y_test_enc, y_test_pred)
-plt.figure(figsize=(10,7))
-sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", xticklabels=le.classes_, yticklabels=le.classes_)
-plt.xlabel("Predicted")
-plt.ylabel("True")
-plt.title("Confusion Matrix - GaussianNB")
-plt.savefig("../models/naive_bayes/confusion_matrix_GaussianNB.png")
-plt.close()
-
-# =======================
-# SAVE MODEL, SCALER, LABEL ENCODER
-# =======================
+# ============================
+# SAVE MODEL + TRANSFORMERS
+# ============================
 os.makedirs("../models/naive_bayes", exist_ok=True)
-joblib.dump(model, "../models/naive_bayes/GaussianNB.pkl")
-joblib.dump(scaler, "../models/naive_bayes/standard_scaler.pkl")
+joblib.dump(nb, "../models/naive_bayes/naive_bayes_model.pkl")
+joblib.dump(scaler, "../models/naive_bayes/scaler.pkl")
+joblib.dump(pt, "../models/naive_bayes/power_transformer.pkl")
 joblib.dump(le, "../models/naive_bayes/label_encoder.pkl")
 
-print("GaussianNB pipeline completed and saved successfully.")
+print("Naive Bayes model and preprocessing tools saved successfully.")
