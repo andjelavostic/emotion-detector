@@ -1,4 +1,5 @@
 import numpy as np
+from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler, LabelEncoder
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
@@ -32,9 +33,9 @@ knn = KNeighborsClassifier()
 param_grid = {
     'n_neighbors': [3,5,7,9,11],
     'weights': ['uniform','distance'],
-    'p':[1,2],
-    'algorithm':['auto','ball_tree','kd_tree','brute'],
-    'leaf_size':[20,30,40]
+    'p':[1,2]
+    #'algorithm':['auto','ball_tree','kd_tree','brute'],
+    #'leaf_size':[20,30,40]
 }
 grid = GridSearchCV(knn, param_grid, cv=5, scoring='accuracy', n_jobs=-1, verbose=2)
 grid.fit(X_train_scaled, y_train)

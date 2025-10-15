@@ -44,9 +44,9 @@ y_test_encoded  = le.transform(y_test)
 # STANDARDIZE
 # ===============================
 scaler = StandardScaler()
-X_train_scaled = scaler.fit_transform(X_train)
-X_val_scaled   = scaler.transform(X_val)
-X_test_scaled  = scaler.transform(X_test)
+X_train_scaled = scaler.fit_transform(np.nan_to_num(X_train, nan=0.0))
+X_val_scaled   = scaler.transform(np.nan_to_num(X_val, nan=0.0))
+X_test_scaled  = scaler.transform(np.nan_to_num(X_test, nan=0.0))
 
 # ===============================
 # SAVE NUMPY ARRAYS

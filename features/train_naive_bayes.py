@@ -1,12 +1,12 @@
 import numpy as np
-from sklearn.preprocessing import StandardScaler, PowerTransformer, LabelEncoder
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import MinMaxScaler, StandardScaler, PowerTransformer, LabelEncoder
 from sklearn.naive_bayes import GaussianNB
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 import joblib
 import os
 import matplotlib.pyplot as plt
 import seaborn as sns
-
 # =========================
 # LOAD DATA
 # =========================
@@ -21,14 +21,14 @@ y_test  = np.load("../data/processed_data/y_test.npy")
 # STANDARDIZE + POWER TRANSFORM
 # =========================
 scaler = StandardScaler()
-X_train_scaled = scaler.fit_transform(X_train)
-X_val_scaled   = scaler.transform(X_val)
-X_test_scaled  = scaler.transform(X_test)
+X_train_trans = scaler.fit_transform(X_train)
+X_val_trans  = scaler.transform(X_val)
+X_test_trans  = scaler.transform(X_test)
 
-pt = PowerTransformer(method='yeo-johnson')
-X_train_trans = pt.fit_transform(X_train_scaled)
-X_val_trans   = pt.transform(X_val_scaled)
-X_test_trans  = pt.transform(X_test_scaled)
+pca = PCA(n_components=50)
+X_train_trans = pca.fit_transform(X_train_trans)
+X_val_trans   = pca.transform(X_val_trans)
+X_test_trans=pca.transform(X_test_trans)
 
 # =========================
 # LABEL ENCODER (samo za imena emocija)
@@ -89,6 +89,6 @@ save_confusion_matrix(y_test, y_test_pred, le.classes_, "../models/naive_bayes/t
 os.makedirs("../models/naive_bayes", exist_ok=True)
 joblib.dump(nb, "../models/naive_bayes/naive_bayes_model.pkl")
 joblib.dump(scaler, "../models/naive_bayes/scaler.pkl")
-joblib.dump(pt, "../models/naive_bayes/power_transformer.pkl")
+#joblib.dump(pt, "../models/naive_bayes/power_transformer.pkl")
 joblib.dump(le, "../models/naive_bayes/label_encoder.pkl")
 print("Naive Bayes model, scaler, power transformer, label encoder and confusion matrices saved successfully.")

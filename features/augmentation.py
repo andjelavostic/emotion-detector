@@ -65,15 +65,29 @@ for idx, row in tqdm(df_train.iterrows(), total=len(df_train), desc="Augmenting 
     emotion = row['emotion']
     gender = row['gender']
     
+    # učitaj audio
     y, _ = librosa.load(y_path, duration=duration, sr=sr, offset=offset, res_type='kaiser_fast')
     
     for func in augment_funcs:
         y_aug = func(y, sr)
+        
+        # Mel spektrogram
         mel = librosa.feature.melspectrogram(y=y_aug, sr=sr, n_mels=128, fmax=8000)
         mel_db = librosa.power_to_db(mel)
-        features = np.mean(mel_db, axis=1)
-
-        all_features.append(features)
+        
+        # očisti NaN i inf vrednosti
+        mel_db = np.nan_to_num(mel_db, nan=0.0, posinf=0.0, neginf=0.0)
+        
+        # Izračunaj statistike po vremenskoj osi (axis=1)
+        mean_features = np.mean(mel_db, axis=1)
+        std_features  = np.std(mel_db, axis=1)
+        max_features  = np.max(mel_db, axis=1)
+            
+        # spoji u jedan feature vector
+        feature_vector = np.concatenate([mean_features,std_features,max_features])
+        
+        # dodaj u listu
+        all_features.append(feature_vector)
         all_emotions.append(emotion)
         all_genders.append(gender)
 # ===============================

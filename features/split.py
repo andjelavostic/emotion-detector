@@ -5,7 +5,8 @@ import os
 # ===============================
 # SETTINGS
 # ===============================
-input_csv = "../data/processed_data/features_mel.csv"
+#input_csv = "../data/processed_data/features_mel.csv"
+input_csv = "../data/processed_data/features_mel_extended.csv"
 output_dir = "../data/processed_data/"
 
 # Load features CSV
