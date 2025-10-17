@@ -54,7 +54,7 @@ def save_confusion_matrix(y_true, y_pred, classes, filename, title='Confusion Ma
     plt.title(title)
     plt.show()  # Ovaj red prikazuje matricu odmah
     os.makedirs(os.path.dirname(filename), exist_ok=True)
-    plt.savefig(filename)
+    #plt.savefig(filename)
     plt.close()
     print(f"✅ Saved {filename}")
 
