@@ -6,11 +6,11 @@ import os
 # ===============================
 # SETTINGS
 # ===============================
-train_csv = "../data/processed_data/features_mel_train_augmented.csv"
-val_csv   = "../data/processed_data/features_mel_val.csv"
-test_csv  = "../data/processed_data/features_mel_test.csv"
+train_csv = "../data/processed_data/knn_and_nb/features_mel_train_augmented.csv"
+val_csv   = "../data/processed_data/knn_and_nb/features_mel_val.csv"
+test_csv  = "../data/processed_data/knn_and_nb/features_mel_test.csv"
 
-output_dir = "../data/processed_data/"
+output_dir = "../data/processed_data/knn_and_nb/"
 
 # ===============================
 # LOAD CSVs

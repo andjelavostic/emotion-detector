@@ -10,12 +10,12 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 # === LOAD DATA ===
-X_train = np.load("../data/processed_data/X_train.npy")
-y_train = np.load("../data/processed_data/y_train.npy")  # integeri
-X_val   = np.load("../data/processed_data/X_val.npy")
-y_val   = np.load("../data/processed_data/y_val.npy")
-X_test  = np.load("../data/processed_data/X_test.npy")
-y_test  = np.load("../data/processed_data/y_test.npy")
+X_train = np.load("../data/processed_data/knn_and_nb/X_train.npy")
+y_train = np.load("../data/processed_data/knn_and_nb/y_train.npy")  # integeri
+X_val   = np.load("../data/processed_data/knn_and_nb/X_val.npy")
+y_val   = np.load("../data/processed_data/knn_and_nb/y_val.npy")
+X_test  = np.load("../data/processed_data/knn_and_nb/X_test.npy")
+y_test  = np.load("../data/processed_data/knn_and_nb/y_test.npy")
 
 # === STANDARDIZE FEATURES ===
 scaler = StandardScaler()

@@ -7,9 +7,9 @@ from tqdm import tqdm
 # ===============================
 # SETTINGS
 # ===============================
-train_csv = "../data/processed_data/features_mel_train.csv"  # samo train CSV
-output_dir = "../data/processed_data/"
-train_aug_csv = os.path.join(output_dir, "features_mel_train_augmented.csv")
+train_csv = "../data/processed_data/knn_and_nb/features_mel_train.csv"  # samo train CSV
+output_dir = "../data/processed_data/knn_and_nb"
+train_aug_csv = os.path.join(output_dir,"features_mel_train_augmented.csv")
 duration = 3
 sr = 44100
 offset = 0.5

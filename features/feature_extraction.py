@@ -36,6 +36,6 @@ feature_df = pd.DataFrame(features)
 final_df = pd.concat([df[['emotion', 'gender', 'path']], feature_df], axis=1)
 
 # Sačuvaj u CSV
-final_df.to_csv("../data/processed_data/features_mel_extended.csv", index=False)
+final_df.to_csv("../data/processed_data/knn_and_nb/features_mel_extended.csv", index=False)
 
 print("✅ Sačuvan feature dataframe:", final_df.shape)

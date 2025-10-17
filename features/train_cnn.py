@@ -1,180 +1,139 @@
-import os
 import numpy as np
-import torch
-import torch.nn as nn
-import torch.optim as optim
-from torch.utils.data import Dataset, DataLoader
-from sklearn.metrics import accuracy_score, f1_score
+from sklearn.preprocessing import StandardScaler
+from tensorflow.keras.layers import GlobalAveragePooling1D
+from sklearn.preprocessing import LabelEncoder
+from tensorflow.keras.utils import to_categorical
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Conv1D, MaxPooling1D, Dropout, Flatten, Dense
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.regularizers import l2
 import matplotlib.pyplot as plt
+from sklearn.metrics import confusion_matrix,ConfusionMatrixDisplay
+import seaborn as sns
+# ===============================
+# 1️⃣ Učitaj npy fajlove
+# ===============================
+X_train = np.load("../data/input/najnovijaaa/nov/X_train_cnn.npy")
+y_train = np.load("/kaggle/input/najnovijaaa/nov/y_train_cnn.npy")
+X_val   = np.load("/kaggle/input/najnovijaaa/nov/X_val_cnn.npy")
+y_val   = np.load("/kaggle/input/najnovijaaa/nov/y_val_cnn.npy")
+X_test  = np.load("/kaggle/input/najnovijaaa/nov/X_test_cnn.npy")
+y_test  = np.load("/kaggle/input/najnovijaaa/nov/y_test_cnn.npy")
 
-# ===== CONFIG =====
-DATA_DIR = "/kaggle/input/heeeeej/processed_data"
-MODEL_DIR = "kaggle/working/novo"
-BATCH_SIZE = 32
-LR = 0.0005
-EPOCHS = 50
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# ===============================
+# 2️⃣ Normalizacija sa StandardScaler
 
-os.makedirs(MODEL_DIR, exist_ok=True)
+# ===============================
+# 3️⃣ One-hot encoding labela
 
-# ===== DATASET =====
-class MelDataset(Dataset):
-    def __init__(self, X_path, y_path):
-        self.X = np.load(X_path)
-        self.y = np.load(y_path)
-        self.X = torch.tensor(self.X, dtype=torch.float32)
-        self.y = torch.tensor(self.y, dtype=torch.long)
 
-    def __len__(self):
-        return len(self.X)
+le = LabelEncoder()
+y_train_int = le.fit_transform(y_train)  # 0..7
+y_val_int   = le.transform(y_val)
+y_test_int  = le.transform(y_test)
 
-    def __getitem__(self, idx):
-        return self.X[idx], self.y[idx]
+# One-hot encode
+num_classes = len(le.classes_)
+y_train_enc = to_categorical(y_train_int, num_classes=num_classes)
+y_val_enc   = to_categorical(y_val_int, num_classes=num_classes)
+y_test_enc  = to_categorical(y_test_int, num_classes=num_classes)
 
-train_dataset = MelDataset(os.path.join(DATA_DIR, "X_train_mel_aug.npy"),
-                           os.path.join(DATA_DIR, "y_train_mel_aug.npy"))
-val_dataset = MelDataset(os.path.join(DATA_DIR, "X_val_mel.npy"),
-                         os.path.join(DATA_DIR, "y_val_mel.npy"))
+X_train = X_train[:, :, np.newaxis] if X_train.ndim==2 else X_train
+X_val   = X_val[:, :, np.newaxis] if X_val.ndim==2 else X_val
+X_test  = X_test[:, :, np.newaxis] if X_test.ndim==2 else X_test
+# ===============================
+# 4️⃣ Definicija 1D CNN modela
 
-train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
-val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False)
+"""model = Sequential([
+    Conv1D(64, kernel_size=3, activation='relu', input_shape=input_shape),
+    Conv1D(128, kernel_size=3, activation='relu', kernel_regularizer=l2(0.01), bias_regularizer=l2(0.01)),
+    Dropout(0.4),
+    Conv1D(128, kernel_size=3, activation='relu'),
+    Dropout(0.4),
+    Flatten(),
+    Dense(128, activation='relu'),
+    Dropout(0.4),
+    Dense(num_classes, activation='softmax')
+])"""
+input_shape = X_train.shape[1:]  # (259, 128)
 
-# ===== CNN MODEL =====
-class CNNEmotion(nn.Module):
-    def __init__(self, n_classes):
-        super(CNNEmotion, self).__init__()
-        self.features = nn.Sequential(
-            nn.Conv2d(1, 16, 3, padding=1),
-            nn.BatchNorm2d(16),
-            nn.ReLU(),
-            nn.MaxPool2d(2),
+model = Sequential([
+    Conv1D(64, kernel_size=20, activation='relu', input_shape=input_shape),
+    Conv1D(128, kernel_size=20, activation='relu', kernel_regularizer=l2(0.01), 
+    bias_regularizer=l2(0.01)), 
+    MaxPooling1D(pool_size=8), 
+    Dropout(0.4),
+    Conv1D(128, kernel_size=20, activation='relu'), 
+    MaxPooling1D(pool_size=8), 
+    Dropout(0.4), 
+    GlobalAveragePooling1D(),
+    Dense(256, activation='relu'),
+    Dropout(0.4), 
+    Dense(num_classes, activation='softmax')
+])
 
-            nn.Conv2d(16, 32, 3, padding=1),
-            nn.BatchNorm2d(32),
-            nn.ReLU(),
-            nn.MaxPool2d(2),
+opt = Adam(learning_rate=0.0001)
+model.compile(loss='categorical_crossentropy', optimizer=opt, metrics=['accuracy'])
+model.summary()
 
-            nn.Conv2d(32, 64, 3, padding=1),
-            nn.BatchNorm2d(64),
-            nn.ReLU(),
-            nn.MaxPool2d(2)
+# ===============================
+# 5️⃣ Trening
+# ===============================
+history = model.fit(
+    X_train, y_train_enc,
+    validation_data=(X_val, y_val_enc),
+    epochs=50,
+    batch_size=64
+)
 
-        )
-        self.classifier = nn.Sequential(
-            nn.Flatten(),
-            nn.Linear(64 * (64//8) * (128//8), 128),  # primer
-            nn.ReLU(),
-            nn.Dropout(0.3),  # gasi 30% neurona
-            nn.Linear(128, n_classes)
-        )
+model.save("cnn_model.h5")
 
-    def forward(self, x):
-        x = self.features(x)
-        x = self.classifier(x)
-        return x
+# ===============================
+# 6️⃣ Evaluacija na test skupu
+# ===============================
+test_loss, test_acc = model.evaluate(X_test, y_test_enc)
+print(f"\nTest accuracy: {test_acc*100:.2f}%")
 
-n_classes = len(np.load(os.path.join(DATA_DIR, "label_classes_mel.npy")))
-model = CNNEmotion(n_classes).to(DEVICE)
+# ===============================
+# 7️⃣ Plotovanje
+# ===============================
+train_loss = history.history['loss']
+val_loss   = history.history['val_loss']
+train_acc  = history.history['accuracy']
+val_acc    = history.history['val_accuracy']
+epochs = range(1, len(train_loss)+1)
 
-criterion = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(),lr=LR,weight_decay=1e-4)
+plt.figure(figsize=(12,5))
 
-# ===== TRAIN LOOP =====
-best_val_acc = 0
-train_losses, val_losses = [], []
-train_accs, val_accs = [], []
-train_f1s, val_f1s = [], []
-
-for epoch in range(EPOCHS):
-    model.train()
-    y_true_train, y_pred_train = [], []
-    running_loss = 0.0
-
-    for X_batch, y_batch in train_loader:
-        X_batch, y_batch = X_batch.to(DEVICE), y_batch.to(DEVICE)
-        optimizer.zero_grad()
-        outputs = model(X_batch)
-        loss = criterion(outputs, y_batch)
-        loss.backward()
-        optimizer.step()
-
-        running_loss += loss.item() * X_batch.size(0)
-        y_true_train.extend(y_batch.cpu().numpy())
-        y_pred_train.extend(outputs.argmax(dim=1).cpu().numpy())
-
-    train_loss = running_loss / len(train_dataset)
-    train_acc = accuracy_score(y_true_train, y_pred_train)
-    train_f1 = f1_score(y_true_train, y_pred_train, average='weighted')
-
-    # VALIDATION
-    model.eval()
-    y_true_val, y_pred_val = [], []
-    val_running_loss = 0.0
-    with torch.no_grad():
-        for X_batch, y_batch in val_loader:
-            X_batch, y_batch = X_batch.to(DEVICE), y_batch.to(DEVICE)
-            outputs = model(X_batch)
-            loss = criterion(outputs, y_batch)
-            val_running_loss += loss.item() * X_batch.size(0)
-            y_true_val.extend(y_batch.cpu().numpy())
-            y_pred_val.extend(outputs.argmax(dim=1).cpu().numpy())
-
-    val_loss = val_running_loss / len(val_dataset)
-    val_acc = accuracy_score(y_true_val, y_pred_val)
-    val_f1 = f1_score(y_true_val, y_pred_val, average='weighted')
-
-    train_losses.append(train_loss)
-    val_losses.append(val_loss)
-    train_accs.append(train_acc)
-    val_accs.append(val_acc)
-    train_f1s.append(train_f1)
-    val_f1s.append(val_f1)
-
-    if val_acc > best_val_acc:
-        best_val_acc = val_acc
-        torch.save(model.state_dict(), os.path.join(MODEL_DIR, "best_cnn_model.pth"))
-
-    print(f"Epoch {epoch+1}/{EPOCHS} | "
-          f"Train Loss: {train_loss:.4f}, Acc: {train_acc:.4f}, F1: {train_f1:.4f} | "
-          f"Val Loss: {val_loss:.4f}, Acc: {val_acc:.4f}, F1: {val_f1:.4f}")
-
-print("Training finished. Best model saved.")
-
-# ===== PLOT AND SAVE GRAPHS =====
-os.makedirs(MODEL_DIR, exist_ok=True)
-
-# Loss plot
-plt.figure(figsize=(8,6))
-plt.plot(train_losses, label="Train Loss")
-plt.plot(val_losses, label="Val Loss")
-plt.title("Loss over Epochs")
-plt.xlabel("Epoch")
-plt.ylabel("Loss")
+plt.subplot(1,2,1)
+plt.plot(epochs, train_loss, 'b', label='Training loss')
+plt.plot(epochs, val_loss, 'r', label='Validation loss')
+plt.title('Training and Validation Loss')
+plt.xlabel('Epochs')
+plt.ylabel('Loss')
 plt.legend()
-plt.grid(True)
-plt.savefig(os.path.join(MODEL_DIR, "loss_plot.png"))
-plt.close()
+plt.savefig("loss_plot.png")
 
-# Accuracy plot
-plt.figure(figsize=(8,6))
-plt.plot(train_accs, label="Train Acc")
-plt.plot(val_accs, label="Val Acc")
-plt.title("Accuracy over Epochs")
-plt.xlabel("Epoch")
-plt.ylabel("Accuracy")
+plt.subplot(1,2,2)
+plt.plot(epochs, train_acc, 'b', label='Training Accuracy')
+plt.plot(epochs, val_acc, 'r', label='Validation Accuracy')
+plt.title('Training and Validation Accuracy')
+plt.xlabel('Epochs')
+plt.ylabel('Accuracy')
 plt.legend()
-plt.grid(True)
-plt.savefig(os.path.join(MODEL_DIR, "accuracy_plot.png"))
-plt.close()
+plt.savefig("accuracy_plot.png")
 
-# F1 score plot
-plt.figure(figsize=(8,6))
-plt.plot(train_f1s, label="Train F1")
-plt.plot(val_f1s, label="Val F1")
-plt.title("F1 Score over Epochs")
-plt.xlabel("Epoch")
-plt.ylabel("F1 Score")
-plt.legend()
-plt.grid(True)
-plt.savefig(os.path.join(MODEL_DIR, "f1_plot.png"))
-plt.close()
+y_pred_probs = model.predict(X_test)
+y_pred = np.argmax(y_pred_probs, axis=1)
+y_true = np.argmax(y_test_enc, axis=1)
+
+# Kreiraj matricu konfuzije
+
+emotion_labels = ["neutral","calm","happy","sad","angry","fearful","disgust","surprised"] 
+cm = confusion_matrix(y_true, y_pred)
+disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=emotion_labels)
+plt.figure(figsize=(10,8))
+disp.plot(cmap=plt.cm.Blues, xticks_rotation=45)
+plt.title("Confusion Matrix - Emotions")
+plt.savefig("confusion_matrix.png") 
+plt.show()
