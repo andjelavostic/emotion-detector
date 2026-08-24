@@ -22,6 +22,10 @@ hop_length = 512
 # Load scaler koji smo ranije sačuvali
 scaler = joblib.load(os.path.join(output_dir, "cnn_scaler.pkl"))
 
+# Broj frejmova mora da se poklopi sa X_val/X_test (fiksiran u feature_extraction_cnn.py),
+# jer CNN model očekuje isti input_shape za train/val/test
+target_frames = np.load(val_npy).shape[1]
+
 # ===============================
 # AUGMENTATION FUNCTIONS
 # ===============================
@@ -70,9 +74,18 @@ for idx, row in tqdm(df_train.iterrows(), total=len(df_train)):
         all_emotions.append(emotion)
         max_frames = max(max_frames, mel_db.shape[0])
 
+# ===============================
+# PAD / TRIM na target_frames (isti broj frejmova kao X_val/X_test)
+# ===============================
+features_padded = []
+for f in temp_features:
+    if f.shape[0] < target_frames:
+        f = np.pad(f, ((0, target_frames - f.shape[0]), (0, 0)), mode='constant')
+    else:
+        f = f[:target_frames, :]
+    features_padded.append(f)
 
-
-X_train_aug = np.array(temp_features, dtype=np.float32)
+X_train_aug = np.array(features_padded, dtype=np.float32)
 y_train_aug = np.array(all_emotions)
 
 # ===============================
@@ -90,4 +103,4 @@ os.makedirs(output_dir, exist_ok=True)
 np.save(os.path.join(output_dir,"X_train_cnn.npy"), X_train_aug)
 np.save(os.path.join(output_dir,"y_train_cnn.npy"), y_train_aug)
 
-print(f"✅ Augmented train dataset saved: {X_train_aug.shape}, {y_train_aug.shape}")
+print(f"Augmented train dataset saved: {X_train_aug.shape}, {y_train_aug.shape}")

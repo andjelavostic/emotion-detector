@@ -20,7 +20,7 @@ y_test_pred = knn.predict(X_test_scaled)
 y_test_str = le.inverse_transform(y_test)
 y_test_pred_str = le.inverse_transform(y_test_pred)
 
-print("✅ Test Accuracy:", accuracy_score(y_test_str, y_test_pred_str))
+print("Test Accuracy:", accuracy_score(y_test_str, y_test_pred_str))
 print(classification_report(y_test_str, y_test_pred_str, target_names=le.classes_))
 
 cm = confusion_matrix(y_test, y_test_pred)

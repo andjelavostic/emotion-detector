@@ -33,9 +33,9 @@ for path in tqdm(df['path'], desc="Extracting features"):
 feature_df = pd.DataFrame(features)
 
 # Spoji sa labelama
-final_df = pd.concat([df[['emotion', 'gender', 'path']], feature_df], axis=1)
+final_df = pd.concat([df[['emotion', 'gender', 'actor', 'path']], feature_df], axis=1)
 
 # Sačuvaj u CSV
 final_df.to_csv("../data/processed_data/knn_and_nb/features_mel_extended.csv", index=False)
 
-print("✅ Sačuvan feature dataframe:", final_df.shape)
+print("Sačuvan feature dataframe:", final_df.shape)

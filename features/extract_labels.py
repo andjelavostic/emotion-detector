@@ -31,6 +31,6 @@ emotion_map = {
 df['emotion'] = df['emotion'].map(emotion_map)
 
 df.to_csv("../data/processed_data/audio_labels.csv", index=False)
-print("✅ Sačuvani labeli:", df.shape)
+print("Sačuvani labeli:", df.shape)
 
 

@@ -1,5 +1,5 @@
+import os
 import numpy as np
-from sklearn.preprocessing import StandardScaler
 from tensorflow.keras.layers import GlobalAveragePooling1D
 from sklearn.preprocessing import LabelEncoder
 from tensorflow.keras.utils import to_categorical
@@ -7,28 +7,33 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Conv1D, MaxPooling1D, Dropout, Flatten, Dense
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.regularizers import l2
+from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 import matplotlib.pyplot as plt
-from sklearn.metrics import confusion_matrix,ConfusionMatrixDisplay
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 import seaborn as sns
+
+output_dir = "../models/cnn"
+os.makedirs(output_dir, exist_ok=True)
+
 # ===============================
 # 1️⃣ Učitaj npy fajlove
 # ===============================
-X_train = np.load("../data/input/najnovijaaa/nov/X_train_cnn.npy")
-y_train = np.load("/kaggle/input/najnovijaaa/nov/y_train_cnn.npy")
-X_val   = np.load("/kaggle/input/najnovijaaa/nov/X_val_cnn.npy")
-y_val   = np.load("/kaggle/input/najnovijaaa/nov/y_val_cnn.npy")
-X_test  = np.load("/kaggle/input/najnovijaaa/nov/X_test_cnn.npy")
-y_test  = np.load("/kaggle/input/najnovijaaa/nov/y_test_cnn.npy")
+data_dir = "../data/processed_data/cnn"
+X_train = np.load(os.path.join(data_dir, "X_train_cnn.npy"))
+y_train = np.load(os.path.join(data_dir, "y_train_cnn.npy"))
+X_val   = np.load(os.path.join(data_dir, "X_val_cnn.npy"))
+y_val   = np.load(os.path.join(data_dir, "y_val_cnn.npy"))
+X_test  = np.load(os.path.join(data_dir, "X_test_cnn.npy"))
+y_test  = np.load(os.path.join(data_dir, "y_test_cnn.npy"))
 
 # ===============================
-# 2️⃣ Normalizacija sa StandardScaler
-
+# 2️⃣ One-hot encoding labela
+# Fit-ujemo na fiksnom skupu od 8 emocija (a ne samo na y_train), da mapiranje
+# uvek bude isto bez obzira na to koje su klase prisutne u konkretnom split-u.
 # ===============================
-# 3️⃣ One-hot encoding labela
-
-
 le = LabelEncoder()
-y_train_int = le.fit_transform(y_train)  # 0..7
+le.fit(['neutral', 'calm', 'happy', 'sad', 'angry', 'fear', 'disgust', 'surprise'])
+y_train_int = le.transform(y_train)  # 0..7
 y_val_int   = le.transform(y_val)
 y_test_int  = le.transform(y_test)
 
@@ -79,14 +84,22 @@ model.summary()
 # ===============================
 # 5️⃣ Trening
 # ===============================
+callbacks = [
+    EarlyStopping(monitor='val_loss', patience=8, restore_best_weights=True),
+    ModelCheckpoint(os.path.join(output_dir, "cnn_model.h5"), monitor='val_loss', save_best_only=True),
+]
+
 history = model.fit(
     X_train, y_train_enc,
     validation_data=(X_val, y_val_enc),
     epochs=50,
-    batch_size=64
+    batch_size=64,
+    callbacks=callbacks
 )
 
-model.save("cnn_model.h5")
+# EarlyStopping(restore_best_weights=True) već vraća najbolje težine u model,
+# ali eksplicitno snimamo i ovde da fajl uvek postoji čak i bez ranog zaustavljanja.
+model.save(os.path.join(output_dir, "cnn_model.h5"))
 
 # ===============================
 # 6️⃣ Evaluacija na test skupu
@@ -103,37 +116,40 @@ train_acc  = history.history['accuracy']
 val_acc    = history.history['val_accuracy']
 epochs = range(1, len(train_loss)+1)
 
-plt.figure(figsize=(12,5))
-
-plt.subplot(1,2,1)
+plt.figure(figsize=(6,5))
 plt.plot(epochs, train_loss, 'b', label='Training loss')
 plt.plot(epochs, val_loss, 'r', label='Validation loss')
 plt.title('Training and Validation Loss')
 plt.xlabel('Epochs')
 plt.ylabel('Loss')
 plt.legend()
-plt.savefig("loss_plot.png")
+plt.savefig(os.path.join(output_dir, "loss_plot.png"))
+plt.close()
 
-plt.subplot(1,2,2)
+plt.figure(figsize=(6,5))
 plt.plot(epochs, train_acc, 'b', label='Training Accuracy')
 plt.plot(epochs, val_acc, 'r', label='Validation Accuracy')
 plt.title('Training and Validation Accuracy')
 plt.xlabel('Epochs')
 plt.ylabel('Accuracy')
 plt.legend()
-plt.savefig("accuracy_plot.png")
+plt.savefig(os.path.join(output_dir, "accuracy_plot.png"))
+plt.close()
 
 y_pred_probs = model.predict(X_test)
 y_pred = np.argmax(y_pred_probs, axis=1)
 y_true = np.argmax(y_test_enc, axis=1)
 
 # Kreiraj matricu konfuzije
-
-emotion_labels = ["neutral","calm","happy","sad","angry","fearful","disgust","surprised"] 
+# VAŽNO: display_labels mora biti le.classes_ (redosled u kom LabelEncoder mapira
+# stringove na 0..7), a ne ručno napisan spisak - inače su oznake na matrici pogrešne.
 cm = confusion_matrix(y_true, y_pred)
-disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=emotion_labels)
+disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=le.classes_)
 plt.figure(figsize=(10,8))
 disp.plot(cmap=plt.cm.Blues, xticks_rotation=45)
 plt.title("Confusion Matrix - Emotions")
-plt.savefig("confusion_matrix.png") 
+plt.savefig(os.path.join(output_dir, "confusion_matrix.png"))
 plt.show()
+plt.close()
+
+print(f"Model i grafici sačuvani u {output_dir}")

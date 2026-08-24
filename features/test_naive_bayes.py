@@ -52,11 +52,11 @@ def save_confusion_matrix(y_true, y_pred, classes, filename, title='Confusion Ma
     plt.xlabel('Predicted')
     plt.ylabel('True')
     plt.title(title)
-    plt.show()  # Ovaj red prikazuje matricu odmah
     os.makedirs(os.path.dirname(filename), exist_ok=True)
-    #plt.savefig(filename)
+    plt.savefig(filename)
+    plt.show()
     plt.close()
-    print(f"✅ Saved {filename}")
+    print(f"Saved {filename}")
 
 
 save_confusion_matrix(y_test, y_test_pred, le.classes_, "../models/naive_bayes/test_confusion_matrix.png", "Test Confusion Matrix")

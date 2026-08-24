@@ -1,6 +1,4 @@
 import numpy as np
-from sklearn.decomposition import PCA
-from sklearn.preprocessing import StandardScaler, LabelEncoder
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 from sklearn.model_selection import GridSearchCV
@@ -10,23 +8,19 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 # === LOAD DATA ===
-X_train = np.load("../data/processed_data/knn_and_nb/X_train.npy")
+# X_*.npy su VEĆ skalirani u prepare_for_knn.py (StandardScaler fit na train-u).
+# Ne skaliramo ih ponovo ovde - to bi fitovalo novi scaler preko već skaliranih
+# podataka i pokvarilo bi inferencu na sirovim feature-ima kasnije.
+X_train_scaled = np.load("../data/processed_data/knn_and_nb/X_train.npy")
 y_train = np.load("../data/processed_data/knn_and_nb/y_train.npy")  # integeri
-X_val   = np.load("../data/processed_data/knn_and_nb/X_val.npy")
+X_val_scaled   = np.load("../data/processed_data/knn_and_nb/X_val.npy")
 y_val   = np.load("../data/processed_data/knn_and_nb/y_val.npy")
-X_test  = np.load("../data/processed_data/knn_and_nb/X_test.npy")
+X_test_scaled  = np.load("../data/processed_data/knn_and_nb/X_test.npy")
 y_test  = np.load("../data/processed_data/knn_and_nb/y_test.npy")
 
-# === STANDARDIZE FEATURES ===
-scaler = StandardScaler()
-X_train_scaled = scaler.fit_transform(X_train)
-X_val_scaled   = scaler.transform(X_val)
-X_test_scaled  = scaler.transform(X_test)
-
-# === ENCODE LABELS ===
-le = LabelEncoder()
-# Ako su y_train već integeri 0..7, ovo samo osigurava da LabelEncoder ima imena emocija
-le.fit(['neutral', 'calm', 'happy', 'sad', 'angry', 'fear', 'disgust', 'surprise'])
+# === UČITAJ SCALER I LABEL ENCODER (fitovani u prepare_for_knn.py na sirovim feature-ima) ===
+scaler = joblib.load("../data/processed_data/knn_and_nb/scaler.pkl")
+le = joblib.load("../data/processed_data/knn_and_nb/label_encoder.pkl")
 
 # === GRID SEARCH FOR KNN ===
 knn = KNeighborsClassifier()
@@ -71,7 +65,7 @@ def save_confusion_matrix(y_true, y_pred, classes, filename, title='Confusion Ma
     os.makedirs(os.path.dirname(filename), exist_ok=True)
     plt.savefig(filename)
     plt.close()
-    print(f"✅ Saved {filename}")
+    print(f"Saved {filename}")
 
 save_confusion_matrix(y_val, y_val_pred, le.classes_, "../models/knn/val_confusion_matrix.png", "Validation Confusion Matrix")
 save_confusion_matrix(y_test, y_test_pred, le.classes_, "../models/knn/test_confusion_matrix.png", "Test Confusion Matrix")

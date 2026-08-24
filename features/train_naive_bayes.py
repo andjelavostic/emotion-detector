@@ -1,6 +1,5 @@
 import numpy as np
 from sklearn.decomposition import PCA
-from sklearn.preprocessing import MinMaxScaler, StandardScaler, PowerTransformer, LabelEncoder
 from sklearn.naive_bayes import GaussianNB
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 import joblib
@@ -10,6 +9,8 @@ import seaborn as sns
 # =========================
 # LOAD DATA
 # =========================
+# X_*.npy su VEĆ skalirani u prepare_for_knn.py - ne skaliramo ih ponovo,
+# samo primenjujemo PCA preko već skaliranih feature-a.
 X_train = np.load("../data/processed_data/knn_and_nb/X_train.npy")
 y_train = np.load("../data/processed_data/knn_and_nb/y_train.npy")  # integeri 0..7
 X_val   = np.load("../data/processed_data/knn_and_nb/X_val.npy")
@@ -18,23 +19,19 @@ X_test  = np.load("../data/processed_data/knn_and_nb/X_test.npy")
 y_test  = np.load("../data/processed_data/knn_and_nb/y_test.npy")
 
 # =========================
-# STANDARDIZE + POWER TRANSFORM
+# UČITAJ SCALER (fitovan u prepare_for_knn.py na sirovim feature-ima) + PCA
 # =========================
-scaler = StandardScaler()
-X_train_trans = scaler.fit_transform(X_train)
-X_val_trans  = scaler.transform(X_val)
-X_test_trans  = scaler.transform(X_test)
+scaler = joblib.load("../data/processed_data/knn_and_nb/scaler.pkl")
 
 pca = PCA(n_components=50)
-X_train_trans = pca.fit_transform(X_train_trans)
-X_val_trans   = pca.transform(X_val_trans)
-X_test_trans=pca.transform(X_test_trans)
+X_train_trans = pca.fit_transform(X_train)
+X_val_trans   = pca.transform(X_val)
+X_test_trans  = pca.transform(X_test)
 
 # =========================
-# LABEL ENCODER (samo za imena emocija)
+# LABEL ENCODER (učitan iz prepare_for_knn.py, da mapiranje bude identično)
 # =========================
-le = LabelEncoder()
-le.fit(['neutral', 'calm', 'happy', 'sad', 'angry', 'fear', 'disgust', 'surprise'])
+le = joblib.load("../data/processed_data/knn_and_nb/label_encoder.pkl")
 
 # =========================
 # TRAIN GAUSSIAN NAIVE BAYES
@@ -78,7 +75,7 @@ def save_confusion_matrix(y_true, y_pred, classes, filename, title='Confusion Ma
     os.makedirs(os.path.dirname(filename), exist_ok=True)
     plt.savefig(filename)
     plt.close()
-    print(f"✅ Saved {filename}")
+    print(f"Saved {filename}")
 
 save_confusion_matrix(y_val, y_val_pred, le.classes_, "../models/naive_bayes/val_confusion_matrix.png", "Validation Confusion Matrix")
 save_confusion_matrix(y_test, y_test_pred, le.classes_, "../models/naive_bayes/test_confusion_matrix.png", "Test Confusion Matrix")
