@@ -13,17 +13,16 @@ y_test  = np.load("../data/processed_data/knn_and_nb/y_test.npy")
 
 # =========================
 # LOAD SAVED MODEL AND TRANSFORMERS
+# nb je Pipeline (PCA + GaussianNB), PCA transformacija je vec deo modela.
 # =========================
 nb = joblib.load("../models/naive_bayes/naive_bayes_model.pkl")
 scaler = joblib.load("../models/naive_bayes/scaler.pkl")
 le = joblib.load("../models/naive_bayes/label_encoder.pkl")
-pca = joblib.load("../models/naive_bayes/pca.pkl")
 
 # =========================
 # TRANSFORM TEST DATA
 # =========================
 X_test_trans = scaler.transform(X_test)
-X_test_trans = pca.transform(X_test_trans)  # PCA transformacija
 
 # =========================
 # PREDICTIONS

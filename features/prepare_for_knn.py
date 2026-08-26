@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.preprocessing import LabelEncoder
 import os
 import joblib
 
@@ -36,39 +36,31 @@ y_test  = test_df['emotion'].values
 # LABEL ENCODING
 # ===============================
 le = LabelEncoder()
-le.fit(y_train)  # fit samo na train, da izbegnemo "future info"
-y_train_encoded = le.transform(y_train)
-y_val_encoded   = le.transform(y_val)
-y_test_encoded  = le.transform(y_test)
+le.fit(y_train)
+y_test_encoded = le.transform(y_test)
 
 # ===============================
-# STANDARDIZE
+# SPAJANJE TRAIN + VAL
+# GridSearchCV (u train_knn.py i train_naive_bayes.py) ima sopstvenu unutrasnju
+# unakrsnu proveru za biranje hiperparametara, pa train i val spajamo u jedan
+# trening skup vec ovde. Skaliranje se radi posebno u svakoj trening skripti,
+# na ovom spojenom skupu.
 # ===============================
-scaler = StandardScaler()
-X_train_scaled = scaler.fit_transform(np.nan_to_num(X_train, nan=0.0))
-X_val_scaled   = scaler.transform(np.nan_to_num(X_val, nan=0.0))
-X_test_scaled  = scaler.transform(np.nan_to_num(X_test, nan=0.0))
+X_trainval = np.concatenate([X_train, X_val])
+y_trainval = np.concatenate([y_train, y_val])
+y_trainval_encoded = le.transform(y_trainval)
 
 # ===============================
-# SAVE NUMPY ARRAYS
+# SAVE NUMPY ARRAYS + LABEL ENCODER
 # ===============================
 os.makedirs(output_dir, exist_ok=True)
 
-np.save(os.path.join(output_dir,"X_train.npy"), X_train_scaled)
-np.save(os.path.join(output_dir,"X_val.npy"), X_val_scaled)
-np.save(os.path.join(output_dir,"X_test.npy"), X_test_scaled)
+np.save(os.path.join(output_dir, "X_trainval.npy"), X_trainval)
+np.save(os.path.join(output_dir, "y_trainval.npy"), y_trainval_encoded)
+np.save(os.path.join(output_dir, "X_test.npy"), X_test)
+np.save(os.path.join(output_dir, "y_test.npy"), y_test_encoded)
 
-np.save(os.path.join(output_dir,"y_train.npy"), y_train_encoded)
-np.save(os.path.join(output_dir,"y_val.npy"), y_val_encoded)
-np.save(os.path.join(output_dir,"y_test.npy"), y_test_encoded)
-
-# ===============================
-# SAVE SCALER + LABEL ENCODER
-# (potrebni za dosledan preprocessing pri treningu modela i pri kasnijoj
-# inferenci na sirovim, neskaliranim feature-ima)
-# ===============================
-joblib.dump(scaler, os.path.join(output_dir, "scaler.pkl"))
 joblib.dump(le, os.path.join(output_dir, "label_encoder.pkl"))
 
-print("Train/Val/Test datasets saved to .npy")
-print(f"Train: {X_train_scaled.shape}, Val: {X_val_scaled.shape}, Test: {X_test_scaled.shape}")
+print("Train+Val i Test skupovi sacuvani u .npy")
+print(f"Train+Val: {X_trainval.shape}, Test: {X_test.shape}")
