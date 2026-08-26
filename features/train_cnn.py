@@ -48,18 +48,7 @@ X_val   = X_val[:, :, np.newaxis] if X_val.ndim==2 else X_val
 X_test  = X_test[:, :, np.newaxis] if X_test.ndim==2 else X_test
 # ===============================
 # 4️⃣ Definicija 1D CNN modela
-
-"""model = Sequential([
-    Conv1D(64, kernel_size=3, activation='relu', input_shape=input_shape),
-    Conv1D(128, kernel_size=3, activation='relu', kernel_regularizer=l2(0.01), bias_regularizer=l2(0.01)),
-    Dropout(0.4),
-    Conv1D(128, kernel_size=3, activation='relu'),
-    Dropout(0.4),
-    Flatten(),
-    Dense(128, activation='relu'),
-    Dropout(0.4),
-    Dense(num_classes, activation='softmax')
-])"""
+# ===============================
 input_shape = X_train.shape[1:]  # (259, 128)
 
 model = Sequential([
@@ -97,8 +86,6 @@ history = model.fit(
     callbacks=callbacks
 )
 
-# EarlyStopping(restore_best_weights=True) već vraća najbolje težine u model,
-# ali eksplicitno snimamo i ovde da fajl uvek postoji čak i bez ranog zaustavljanja.
 model.save(os.path.join(output_dir, "cnn_model.h5"))
 
 # ===============================
@@ -141,8 +128,8 @@ y_pred = np.argmax(y_pred_probs, axis=1)
 y_true = np.argmax(y_test_enc, axis=1)
 
 # Kreiraj matricu konfuzije
-# VAŽNO: display_labels mora biti le.classes_ (redosled u kom LabelEncoder mapira
-# stringove na 0..7), a ne ručno napisan spisak - inače su oznake na matrici pogrešne.
+# display_labels koristi le.classes_ da redosled klasa na matrici odgovara
+# stvarnom mapiranju LabelEncoder-a (0..7).
 cm = confusion_matrix(y_true, y_pred)
 disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=le.classes_)
 plt.figure(figsize=(10,8))

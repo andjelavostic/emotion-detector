@@ -64,9 +64,8 @@ np.save(os.path.join(output_dir,"y_test.npy"), y_test_encoded)
 
 # ===============================
 # SAVE SCALER + LABEL ENCODER
-# (potrebni za dosledan preprocessing pri treningu i pri kasnijoj inferenci
-# na sirovim feature-ima; bez ovoga train_knn.py/train_naive_bayes.py bi morali
-# da fituju NOVI scaler preko već skaliranih podataka, sto kvari inferencu)
+# (potrebni za dosledan preprocessing pri treningu modela i pri kasnijoj
+# inferenci na sirovim, neskaliranim feature-ima)
 # ===============================
 joblib.dump(scaler, os.path.join(output_dir, "scaler.pkl"))
 joblib.dump(le, os.path.join(output_dir, "label_encoder.pkl"))

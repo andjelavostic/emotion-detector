@@ -120,9 +120,9 @@ steps_per_epoch = max(1, len(train_dataset) // (BATCH_SIZE * GRAD_ACCUM))
 total_steps = steps_per_epoch * NUM_EPOCHS
 warmup_steps = max(1, int(0.1 * total_steps))
 
-# Naziv parametra za "kad se evaluira" se menjao kroz verzije transformers-a
-# (evaluation_strategy -> eval_strategy) - proveravamo koji trenutno instalirana
-# verzija stvarno prihvata, umesto da pogadjamo.
+# Naziv parametra za strategiju evaluacije se razlikuje izmedju verzija
+# biblioteke transformers (evaluation_strategy / eval_strategy), pa se
+# proverava koji naziv prihvata instalirana verzija.
 ta_params = inspect.signature(TrainingArguments.__init__).parameters
 eval_strategy_key = "eval_strategy" if "eval_strategy" in ta_params else "evaluation_strategy"
 

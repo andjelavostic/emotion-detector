@@ -17,7 +17,7 @@ y_test  = np.load("../data/processed_data/knn_and_nb/y_test.npy")
 nb = joblib.load("../models/naive_bayes/naive_bayes_model.pkl")
 scaler = joblib.load("../models/naive_bayes/scaler.pkl")
 le = joblib.load("../models/naive_bayes/label_encoder.pkl")
-pca = joblib.load("../models/naive_bayes/pca.pkl")  # Ako si PCA sačuvao
+pca = joblib.load("../models/naive_bayes/pca.pkl")
 
 # =========================
 # TRANSFORM TEST DATA

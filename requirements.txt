@@ -10,10 +10,7 @@ matplotlib==3.8.4
 seaborn==0.13.2
 tqdm==4.66.4
 
-# Za train_wav2vec2.py (transfer learning model). Namerno bez tacnog pina -
-# tacne verzije zavise od Python/CUDA okruzenja, a pinovanje stare verzije
-# transformers zna da pukne pri instalaciji (npr. na Colab-u, videti napomenu
-# u train_wav2vec2.py o eval_strategy/evaluation_strategy).
+# Za train_wav2vec2.py (transfer learning model).
 torch
 transformers>=4.44.0
 accelerate

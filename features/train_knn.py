@@ -8,9 +8,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 # === LOAD DATA ===
-# X_*.npy su VEĆ skalirani u prepare_for_knn.py (StandardScaler fit na train-u).
-# Ne skaliramo ih ponovo ovde - to bi fitovalo novi scaler preko već skaliranih
-# podataka i pokvarilo bi inferencu na sirovim feature-ima kasnije.
+# X_*.npy su vec skalirani u prepare_for_knn.py (StandardScaler fit na train-u).
 X_train_scaled = np.load("../data/processed_data/knn_and_nb/X_train.npy")
 y_train = np.load("../data/processed_data/knn_and_nb/y_train.npy")  # integeri
 X_val_scaled   = np.load("../data/processed_data/knn_and_nb/X_val.npy")
