@@ -36,12 +36,16 @@ Tačnost na test skupu (actor-independent, glumci koje model nikad nije video):
 
 | Model | Test accuracy |
 |---|---|
-| Naive Bayes | 36.3% |
-| KNN | 37.9% |
-| CNN | 55.8% |
+| Naive Bayes | 33.3% |
+| KNN | 39.2% |
+| CNN | 52.1% |
 | Wav2Vec2 | 75.0% |
 
 Za poređenje: nasumično pogađanje između 8 klasa daje ~12.5% tačnosti. Actor-independent evaluacija daje niže, ali metodološki pouzdanije brojeve nego nasumična podela na train/val/test, kod koje bi model mogao delom da prepoznaje identitet govornika umesto same emocije.
+
+![Poređenje modela](models/comparison.png)
+
+Detaljan opis metodologije, koda i rezultata za svaki model pojedinačno nalazi se u odgovarajućoj svesci: `knn_model.ipynb`, `naive_bayes_model.ipynb`, `cnn_model.ipynb`, `wav2vec2_model.ipynb`, i `compare_models.ipynb` za finalno poređenje.
 
 ## Struktura projekta
 
@@ -66,7 +70,13 @@ emotion-detector/
 │   └── test_naive_bayes.py
 ├── models/                           sačuvani modeli, scaler-i, confusion matrice
 ├── visualization/                    EDA vizuelizacije (waveform, mel-spektrogram)
+├── eda_visualzation.ipynb            EDA — raspodela klasa/pola/glumaca/trajanja, primeri talasnog oblika i Mel-spektrograma, PCA prostor karakteristika
 ├── emotion_recognition_colab.ipynb   kompletan pipeline za Google Colab
+├── knn_model.ipynb                   metodologija i rezultati — KNN
+├── naive_bayes_model.ipynb           metodologija i rezultati — Naive Bayes
+├── cnn_model.ipynb                   metodologija i rezultati — 1D CNN
+├── wav2vec2_model.ipynb              metodologija i rezultati — Wav2Vec2
+├── compare_models.ipynb              finalno poređenje sva 4 modela
 ├── requirements.txt
 └── README.md
 ```
